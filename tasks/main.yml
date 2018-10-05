@@ -1,0 +1,48 @@
+---
+# tasks file for ali.metrics
+
+- name: Add Elasticsearch GPG key.
+  rpm_key:
+    key: https://packages.elastic.co/GPG-KEY-elasticsearch
+    state: present
+
+- name: Add Elasticsearch repository.
+  copy:
+    src: elasticsearch.repo
+    dest: /etc/yum.repos.d/elasticsearch.repo
+    mode: 0644
+
+
+- name: installing Required packages
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - java-1.8*
+    - merticbeats
+
+- name: Enabling metricbeat
+  service:
+    name:  metricbeat
+    enabled: yes
+
+- name: Running metric beat
+  service: 
+    name: metricbeat
+    state: started
+
+- name: stoping firewalld
+  firewalld:
+    state: disabled
+
+- name: Disabling selinux
+  selinux:
+    policy: targeted
+    state: permissive
+
+- name: Replacing elasticsearch ip in metricbeat config file
+  lineinfile:
+    path: /etc/metricbeat/metricbeat.yml
+    state: present
+    regexp: '^hosts: ["localhost:9200"]\s'
+    line: 'hosts: ["192.168.56.103:9200"]'
